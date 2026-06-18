@@ -16,15 +16,16 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-//        User::query()->create([
-//            'name' => 'Admin',
-//            'email' => 'admin@mail.ru',
-//            'password' => Hash::make('qwerty12345'),
-//            'surname' => 'Admin',
-//            'phone' => '+7(999)999-99-99',
-//            'role_id' => '1',
-//        ]);
-
         $this->call(RoleSeeder::class);
+
+        // 2. Теперь роли существуют, и мы можем спокойно создавать пользователя
+        User::query()->create([
+            'name' => 'Admin',
+            'email' => 'admin@mail.ru',
+            'password' => Hash::make('qwerty12345'),
+            'surname' => 'Admin',
+            'phone' => '+7(999)999-99-99',
+            'role_id' => 1,
+        ]);
     }
 }

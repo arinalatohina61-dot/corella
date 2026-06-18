@@ -104,7 +104,7 @@ class OrderController extends Controller
                 $response = Http::withHeaders([
                     'Accept' => 'application/json',
                     'Content-Type' => 'application/json',
-                ])->post('http://62.113.36.20:8080/api/payments', [
+                ])->post('http://api-webhook/api/payments', [
                     'price' => $order->total_amount,
                     'webhook_url' => route('api.webhook') // Ссылка на наш вебхук
                 ]);
@@ -145,7 +145,7 @@ class OrderController extends Controller
     public function index()
     {
         $orders = Order::with(['client', 'orderDetails.product'])->latest()->paginate(10);
-        return view('admin.orders.index', compact('orders'));
+        return view('order.index', compact('orders'));
     }
 
     public function updateStatus(Request $request, Order $order)

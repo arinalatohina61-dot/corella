@@ -306,7 +306,7 @@
             @endif
         </nav>
 
-        <a href="/" class="logo">corella naturale</a>
+        <a href="/" class="logo">корелла</a>
 
         {{-- Правая навигация --}}
         <nav class="nav-right nav-links">

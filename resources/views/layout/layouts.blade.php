@@ -937,7 +937,7 @@
     <div class="container">
         <div class="footer-grid">
             <div class="footer-column">
-                <div class="footer-logo">CORELLA NATURALE</div>
+                <div class="footer-logo">корелла</div>
             </div>
 
             <div class="footer-column">
