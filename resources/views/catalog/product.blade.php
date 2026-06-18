@@ -493,7 +493,7 @@
                 <div class="product-images-col">
                     <div class="product-main-image-container">
                         @if($product->image)
-                            <img src="{{ asset('public/' . $product->image) }}" alt="{{ $product->name }}" class="product-main-image" id="mainImage">
+                            <img src="{{ asset( $product->image) }}" alt="{{ $product->name }}" class="product-main-image" id="mainImage">
                         @else
                             <img src="{{ asset('image/default.png') }}" alt="Нет изображения" class="product-main-image" id="mainImage">
                         @endif
