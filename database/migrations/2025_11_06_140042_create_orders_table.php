@@ -17,9 +17,12 @@ return new class extends Migration
             $table->foreignId('user_id')->nullable()->constrained('users')->cascadeOnDelete();
             $table->decimal('total_amount', 10, 2);
             $table->string('payment_method')->default('pending');
-            $table->enum('status', ['новый', 'в процессе', 'завершенный', 'отмененный'])->default('новый');
             $table->string('cancel')->nullable();
             $table->string('code');
+            $table->string('pay_url')->nullable();
+            $table->string('external_order_id')->nullable();
+            $table->enum('status', ['новый', 'ожидает оплаты', 'в процессе', 'завершенный', 'отмененный'])
+                ->default('новый');
             $table->timestamps();
         });
     }

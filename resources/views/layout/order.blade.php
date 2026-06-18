@@ -41,19 +41,49 @@
                     <div class="order-items-section">
                         <h2 class="section-title">Товары в заказе</h2>
                         <div class="order-items-list">
-                            @foreach($order->orderDetails as $item)
-                                <div class="order-item-card">
-                                    <div class="item-info">
-                                        <div class="item-name">{{ $item->product->name }}</div>
-                                        <div class="item-details">
-                                            <span class="item-quantity">{{ $item->quantity }} шт.</span>
-                                            <span class="item-price">{{ number_format($item->price_at_order, 0, ',', ' ') }} ₽</span>
+                            @foreach($order->orderDetails as $detail)
+                                {{-- Берем модель товара напрямую из связи --}}
+                                @php $product = $detail->product; @endphp
+
+                                @if($product)
+                                    <div class="order-item-card" style="display: flex; justify-content: space-between; align-items: center; padding: 25px; border: 1px solid #eaeaea; background: #fff; margin-bottom: 15px;">
+                                        <div class="item-info">
+                                            <h3 class="item-name" style="margin: 0 0 10px 0; font-size: 18px; font-weight: 500;">
+                                                {{ $product->name }}
+                                            </h3>
+                                            <div class="item-details" style="display: flex; gap: 20px; font-size: 14px; color: #666; flex-wrap: wrap;">
+                                                <span class="item-quantity">
+                                                    <strong>Количество:</strong> {{ $detail->quantity }} шт.
+                                                </span>
+                                                <span>
+
+                                                    <strong>Размер:</strong>
+                                                    @if(!empty($product->width) && !empty($product->height))
+                                                        {{ $product->width }} × {{ $product->height }} см
+                                                    @elseif(!empty($product->width))
+                                                        {{ $product->width }} см
+                                                    @elseif(!empty($product->height))
+                                                        {{ $product->height }} см
+                                                    @else
+                                                        Не указан
+                                                    @endif
+                                                </span>
+                                                @if(!empty($product->light_requirement))
+                                                    <span>
+                                                        <strong>Освещение:</strong> {{ $product->light_requirement }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        <div class="item-total" style="font-size: 20px; font-weight: 500; text-align: right; min-width: 120px;">
+                                            {{ number_format($detail->price_at_order * $detail->quantity, 0, ',', ' ') }} ₽
                                         </div>
                                     </div>
-                                    <div class="item-total">
-                                        {{ number_format($item->quantity * $item->price_at_order, 0, ',', ' ') }} ₽
+                                @else
+                                    <div class="order-item-card" style="padding: 20px; border: 1px solid #eaeaea; background: #fafafa; margin-bottom: 15px; color: #999; font-size: 14px;">
+                                        📦 Товар был удален из каталога, информация о габаритах недоступна.
                                     </div>
-                                </div>
+                                @endif
                             @endforeach
                         </div>
                     </div>
@@ -74,6 +104,7 @@
                     </a>
                 </div>
             </div>
+    </div>
     </div>
 
 

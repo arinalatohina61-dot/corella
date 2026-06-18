@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Order extends Model
@@ -13,7 +14,9 @@ class Order extends Model
         'total_amount',
         'payment_method',
         'status',
-        'code'
+        'code',
+        'external_order_id',
+        'pay_url'
     ];
 
     public function user()
@@ -39,5 +42,17 @@ class Order extends Model
     public function delivery(): HasOne
     {
         return $this->hasOne(Delivery::class);
+    }
+
+    public function products(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Product::class,
+            Order_detail::class,
+            'order_id',
+            'id',
+            'id',
+            'product_id'
+        );
     }
 }

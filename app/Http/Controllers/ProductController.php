@@ -7,6 +7,7 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
@@ -71,17 +72,25 @@ class ProductController extends Controller
         if ($request->hasFile('image')) {
             $file = $request->file('image');
             $path = 'image/product/';
+
+            // Создаем директорию, если её нет
             if (!is_dir(public_path($path))) {
                 mkdir(public_path($path), 0777, true);
             }
 
-            $filename = time() . '_' . $file->getClientOriginalName();
+            // ИСПРАВЛЕНИЕ: Генерируем безопасное имя на латинице (например: 1765165475_a1b2c3d4e5.jpg)
+            $extension = $file->getClientOriginalExtension();
+            $filename = time() . '_' . Str::random(10) . '.' . $extension;
+
+            // Переносим файл в публичную папку
             $file->move(public_path($path), $filename);
 
+            // Удаление старого файла (если это логика обновления, а не создания)
             if (isset($product) && $product->image && file_exists(public_path($product->image))) {
                 unlink(public_path($product->image));
             }
 
+            // Сохраняем в базу правильный относительный путь: image/product/имя.jpg
             $data['image'] = $path . $filename;
         }
 

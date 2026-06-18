@@ -7,6 +7,7 @@ use App\Models\Order_detail;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 
 class OrderController extends Controller
 {
@@ -30,20 +31,25 @@ class OrderController extends Controller
         $products = [];
 
         foreach ($cart as $id => $item) {
-            $total += $item['price'] * $item['quantity'];
-            $products[] = (object)[
-                'id' => $id,
-                'name' => $item['name'],
-                'price' => $item['price'],
-                'width' => $item['width'] ?? null,
-                'height' => $item['height'] ?? null,
-                'light_requirement' => $item['light_requirement'] ?? null,
-                'quantity' => $item['quantity'],
-                'image' => $item['image'] ?? null,
-            ];
+            // Загружаем товар из БД чтобы получить ВСЕ поля
+            $product = Product::find($id);
+
+            if ($product) {
+                $total += $product->price * $item['quantity'];
+                $products[] = (object)[
+                    'id' => $id,
+                    'name' => $product->name,
+                    'price' => $product->price,
+                    'width' => $product->width,
+                    'height' => $product->height,
+                    'light_requirement' => $product->light_requirement,
+                    'quantity' => $item['quantity'],
+                    'image' => $product->image,
+                ];
+            }
         }
 
-        return view('order.checkout', compact('products', 'total')); // ← ВОТ ЗДЕСЬ!
+        return view('order.checkout', compact('products', 'total'));
     }
 
     public function store(Request $request)
@@ -55,37 +61,33 @@ class OrderController extends Controller
         $client = Auth::guard('client')->user();
 
         if (!$client) {
-            return redirect()->route('login')
-                ->with('error', 'Пожалуйста, войдите в систему');
+            return redirect()->route('login')->with('error', 'Пожалуйста, войдите в систему');
         }
 
-        // Получаем корзину из сессии
         $cart = session('cart', []);
 
         if (empty($cart)) {
-            return redirect()->route('cart.index')
-                ->with('error', 'Корзина пуста');
+            return redirect()->route('cart.index')->with('error', 'Корзина пуста');
         }
 
-        // Считаем общую сумму
         $total = 0;
         foreach ($cart as $item) {
             $total += $item['price'] * $item['quantity'];
         }
 
-        // Создаем заказ
-        $order = Order::create([
+        $initialStatus = $request->payment_method === 'card' ? 'ожидает оплаты' : 'новый';
+
+        $order = Order::query()->create([
             'client_id' => $client->id,
             'user_id' => null,
             'total_amount' => $total,
             'payment_method' => $request->payment_method,
-            'status' => 'новый',
+            'status' => $initialStatus,
             'code' => 'ORD-' . strtoupper(uniqid()),
         ]);
 
-        // Создаем позиции заказа из сессии
         foreach ($cart as $id => $item) {
-            Order_detail::create([
+            Order_detail::query()->create([
                 'order_id' => $order->id,
                 'product_id' => $id,
                 'quantity' => $item['quantity'],
@@ -93,17 +95,45 @@ class OrderController extends Controller
             ]);
         }
 
-        // Очищаем корзину в сессии
+        // Очищаем корзину
         session()->forget('cart');
 
-        // Если оплата наличными - перенаправляем на оформление доставки
-        if ($request->payment_method === 'cash') {
-            return redirect()->route('delivery.create', $order->id)
-                ->with('success', 'Заказ создан! Теперь укажите адрес доставки.');
+        // 3. Логика оплаты картой через стороннее API
+        if ($request->payment_method === 'card') {
+            try {
+                $response = Http::withHeaders([
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json',
+                ])->post('http://62.113.36.20:8080/api/payments', [
+                    'price' => $order->total_amount,
+                    'webhook_url' => route('api.webhook') // Ссылка на наш вебхук
+                ]);
+
+                if ($response->successful()) {
+                    $paymentData = $response->json();
+
+                    // Сохраняем внешние ID и URL в нашу базу данных
+                    $order->update([
+                        'pay_url' => $paymentData['pay_url'],
+                        'external_order_id' => $paymentData['order_id']
+                    ]);
+
+                    // Перенаправляем клиента на внешнюю страницу оплаты (ввод карты)
+                    return redirect()->away($order->pay_url);
+                } else {
+                    $order->update(['status' => 'отмененный', 'cancel' => 'Ошибка платежного шлюза']);
+                    return redirect()->route('cart.index')->with('error', 'Не удалось инициализировать оплату. Попробуйте позже.');
+                }
+
+            } catch (\Throwable $th) {
+                $order->update(['status' => 'отмененный', 'cancel' => 'Техническая ошибка при оплате']);
+                return redirect()->route('cart.index')->with('error', 'Ошибка соединения с банком: ' . $th->getMessage());
+            }
         }
 
-        // Если оплата картой - показываем страницу успеха
-        return redirect()->route('order.success', $order->id);
+        // Если оплата наличными - отправляем на доставку
+        return redirect()->route('delivery.create', $order->id)
+            ->with('success', 'Заказ создан! Теперь укажите адрес доставки.');
     }
 
     public function success($id)
