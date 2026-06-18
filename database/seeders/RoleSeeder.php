@@ -15,16 +15,16 @@ class RoleSeeder extends Seeder
      */
     public function run(): void
     {
-//        Role::query()->create([
-//            'name' => 'admin',
-//        ]);
-//
-//        Role::query()->create([
-//            'name' => 'manager',
-//        ]);
-//
-//        Role::query()->create([
-//            'name' => 'client',
-//        ]);
+        Role::query()->create([
+            'name' => 'admin',
+        ]);
+
+        Role::query()->create([
+            'name' => 'manager',
+        ]);
+
+        Role::query()->create([
+            'name' => 'client',
+        ]);
     }
 }
